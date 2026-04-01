@@ -1,6 +1,7 @@
 """Python file for ExtractParagraphs.py. Written by Prajwala Immareddy."""
 
 from typing import List
+import re
 import unicodedata
 import fitz
 
@@ -35,7 +36,10 @@ class ExtractParagraphs:
         """Returns a list of strings where each element is a paragraph."""
         paragraphs: List[str] = []
 
+        # Regex to recognize newlines
+        parts = re.split(r"\r?\n\s*\r?\n", self.text)
+
         # Split into paragraphs
-        paragraphs = self.text.split("\\n\\n")
+        paragraphs = [p.strip() for p in parts if p.strip()]
 
         return paragraphs
