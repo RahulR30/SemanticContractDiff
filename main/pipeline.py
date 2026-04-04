@@ -2,8 +2,8 @@
 
 from typing import List
 from main.extract_paragraphs import ExtractParagraphs
-from main.similarity_scorer import SimilarityScorer
-from main.llm_analyzer import LLMAnalyzer
+from main.score_map import compute_similarity
+from main.LLM_Orchestrator import Orchestrator
 
 
 def run_pipeline(
@@ -21,22 +21,20 @@ def run_pipeline(
 
     Returns:
         A list of dicts, each with keys:
-            clause_index, original_text, score, analysis
+            clause_index, original_text, revised_text, score, analysis
     """
     paragraphs_a: List[str] = ExtractParagraphs(pdf_a_path).text_to_paragraph()
     paragraphs_b: List[str] = ExtractParagraphs(pdf_b_path).text_to_paragraph()
 
-    # Align lists to the shorter document so indices stay consistent
+    # Align to the shorter document so all three lists stay the same length
     length = min(len(paragraphs_a), len(paragraphs_b))
     paragraphs_a = paragraphs_a[:length]
     paragraphs_b = paragraphs_b[:length]
 
-    scores: List[float] = SimilarityScorer(paragraphs_a, paragraphs_b).compute_scores()
+    scores: List[float] = compute_similarity(paragraphs_a, paragraphs_b)
 
-    results: List[dict] = LLMAnalyzer(
-        paragraphs=paragraphs_b,
-        scores=scores,
-        threshold=threshold,
-    ).analyze()
+    results: List[dict] = Orchestrator(threshold=threshold).analyze(
+        paragraphs_a, paragraphs_b, scores
+    )
 
     return results

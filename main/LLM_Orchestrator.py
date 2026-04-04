@@ -9,10 +9,16 @@ class Orchestrator:
     def __init__(self, threshold: float = 0.95, model: str = "openrouter/free"):
         self.threshold = threshold
         self.model = model
-        self.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY")
-        )
+        self._client = None
+
+    @property
+    def client(self) -> OpenAI:
+        if self._client is None:
+            self._client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv("OPENROUTER_API_KEY")
+            )
+        return self._client
 
     def call_llm(self, original: str, revised: str) -> str:
         response = self.client.chat.completions.create(

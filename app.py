@@ -59,22 +59,25 @@ if file_a and file_b:
                 with st.expander(header, expanded=is_critical):
                     left, right = st.columns(2)
 
+                    highlight_color = "#ffd6d6" if is_critical else "#f0f0f0"
+
                     with left:
-                        st.markdown("**Original text**")
-                        original = item.get("original_text", "")
-                        if is_critical:
-                            st.markdown(
-                                f"<div style='background:#ffd6d6;padding:10px;border-radius:6px'>{original}</div>",
-                                unsafe_allow_html=True,
-                            )
-                        else:
-                            st.markdown(
-                                f"<div style='background:#f0f0f0;padding:10px;border-radius:6px'>{original}</div>",
-                                unsafe_allow_html=True,
-                            )
+                        st.markdown("**Version A (original)**")
+                        st.markdown(
+                            f"<div style='background:{highlight_color};padding:10px;border-radius:6px'>"
+                            f"{item.get('original_text', '')}</div>",
+                            unsafe_allow_html=True,
+                        )
 
                     with right:
-                        st.markdown("**LLM analysis**")
-                        st.info(item.get("analysis", "No analysis returned."))
+                        st.markdown("**Version B (revised)**")
+                        st.markdown(
+                            f"<div style='background:{highlight_color};padding:10px;border-radius:6px'>"
+                            f"{item.get('revised_text', '')}</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                    st.markdown("**LLM analysis**")
+                    st.info(item.get("analysis", "No analysis returned."))
 else:
     st.info("Upload both contract PDFs to begin.")
