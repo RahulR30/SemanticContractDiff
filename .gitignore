@@ -12,5 +12,9 @@ __pycache__/
 .vscode/
 .idea/
 
-.DS_Storegit
+.DS_Store
 Thumbs.db
+
+# Chroma persistent indexes
+.chroma/
+**/chroma/

@@ -4,3 +4,12 @@ scikit-learn
 openai
 python-dotenv
 streamlit
+
+# RAG stack: chunking + vector DB + LangChain orchestration
+langchain
+langchain-community
+langchain-text-splitters
+langchain-openai
+langchain-huggingface
+langchain-chroma
+chromadb
