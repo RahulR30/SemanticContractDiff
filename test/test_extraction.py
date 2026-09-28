@@ -26,14 +26,14 @@ class TestExtractParagraphs(unittest.TestCase):
     """Unit tests for ExtractParagraphs calling the actual constructor."""
 
     def test_constructor_normalizes(self) -> None:
-        """Constructor should read pages, remove header/footer, and normalize ligatures."""
+        """Constructor should read pages, preserve boundary lines, and normalize ligatures."""
         page: MagicMock = MagicMock()
         page.get_text.return_value = "Header\nHello\uFB01 world\nFooter"
 
         with patch('main.extract_paragraphs.fitz.open', return_value=MockPDF([page])):
             extractor = ExtractParagraphs("fake.pdf")
 
-        self.assertEqual(extractor.text, "Hellofi world")
+        self.assertEqual(extractor.text, "Header\nHellofi world\nFooter")
 
     def test_text_to_paragraph_splits(self) -> None:
         """Ensure method splits on actual newlines."""
@@ -45,7 +45,7 @@ class TestExtractParagraphs(unittest.TestCase):
 
         paragraphs = extractor.text_to_paragraph()
 
-        self.assertEqual(paragraphs, ["para1", "para2"])
+        self.assertEqual(paragraphs, ["Header\npara1", "para2\nFooter"])
 
     def test_literal_escape_not_split(self) -> None:
         """Verify that literal backslash escape sequences are not treated as newlines."""
@@ -58,4 +58,4 @@ class TestExtractParagraphs(unittest.TestCase):
 
         paragraphs = extractor.text_to_paragraph()
 
-        self.assertEqual(paragraphs, ["para1\\n\\npara2"])
+        self.assertEqual(paragraphs, ["Header\npara1\\n\\npara2\nFooter"])

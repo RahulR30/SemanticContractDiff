@@ -26,12 +26,14 @@ def run_pipeline(
     paragraphs_a: List[str] = ExtractParagraphs(pdf_a_path).text_to_paragraph()
     paragraphs_b: List[str] = ExtractParagraphs(pdf_b_path).text_to_paragraph()
 
-    # Align to the shorter document so all three lists stay the same length
-    length = min(len(paragraphs_a), len(paragraphs_b))
-    paragraphs_a = paragraphs_a[:length]
-    paragraphs_b = paragraphs_b[:length]
-
-    scores: List[float] = compute_similarity(paragraphs_a, paragraphs_b)
+    # Compare shared positions, then preserve additions/deletions as unmatched
+    # clauses instead of silently truncating the longer document.
+    shared = min(len(paragraphs_a), len(paragraphs_b))
+    scores = compute_similarity(paragraphs_a[:shared], paragraphs_b[:shared])
+    length = max(len(paragraphs_a), len(paragraphs_b))
+    paragraphs_a += [""] * (length - len(paragraphs_a))
+    paragraphs_b += [""] * (length - len(paragraphs_b))
+    scores += [0.0] * (length - shared)
 
     results: List[dict] = Orchestrator(threshold=threshold).analyze(
         paragraphs_a, paragraphs_b, scores

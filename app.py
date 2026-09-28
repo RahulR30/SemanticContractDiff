@@ -1,6 +1,7 @@
 """Streamlit UI for SemanticContractDiff — classic + RAG modes."""
 
 import os
+from html import escape
 import tempfile
 
 import streamlit as st
@@ -11,7 +12,7 @@ from main.rag_pipeline import ask_contract_question, run_rag_pipeline
 st.set_page_config(page_title="Semantic Contract Diff", layout="wide")
 st.title("Semantic Contract Diff")
 st.caption(
-    "Detects substantive legal changes between two contract versions. "
+    "Highlights text differences between two contract versions. "
     "Classic mode = index-aligned embeddings. RAG mode = chunking + Chroma + LangChain."
 )
 
@@ -33,12 +34,9 @@ with st.sidebar:
     )
     top_k = st.slider("Retriever top-k (RAG only)", 1, 8, 3)
     st.markdown("---")
-    st.markdown(
-        "**Buzzword map**\n"
-        "- **Chunking** → `main/chunking.py`\n"
-        "- **Vector DB** → Chroma in `main/vector_store.py`\n"
-        "- **LangChain** → splitters + prompts in `rag_chain.py`\n"
-        "- **RAG** → `main/rag_pipeline.py`"
+    st.caption(
+        "Classic mode compares paragraph positions. RAG mode finds similar passages. "
+        "Review the source text: similarity scores do not measure legal importance."
     )
 
 col_a, col_b = st.columns(2)
@@ -58,9 +56,9 @@ with tab_diff:
                 chroma_dir = os.path.join(tmpdir, "chroma")
 
                 with open(path_a, "wb") as f:
-                    f.write(file_a.read())
+                    f.write(file_a.getvalue())
                 with open(path_b, "wb") as f:
-                    f.write(file_b.read())
+                    f.write(file_b.getvalue())
 
                 with st.spinner("Running pipeline..."):
                     try:
@@ -99,14 +97,14 @@ with tab_diff:
                             st.markdown("**Version A (original / nearest match)**")
                             st.markdown(
                                 f"<div style='background:{highlight_color};padding:10px;"
-                                f"border-radius:6px'>{item.get('original_text', '')}</div>",
+                                f"border-radius:6px'>{escape(item.get('original_text', ''))}</div>",
                                 unsafe_allow_html=True,
                             )
                         with right:
                             st.markdown("**Version B (revised)**")
                             st.markdown(
                                 f"<div style='background:{highlight_color};padding:10px;"
-                                f"border-radius:6px'>{item.get('revised_text', '')}</div>",
+                                f"border-radius:6px'>{escape(item.get('revised_text', ''))}</div>",
                                 unsafe_allow_html=True,
                             )
                         st.markdown("**LLM analysis**")
