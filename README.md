@@ -23,13 +23,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file containing `OPENROUTER_API_KEY=your-key`, then run:
+To try the app without an API key, run:
 
 ```bash
 streamlit run app.py
 ```
 
-Upload `demo_contract_v1.pdf` and `demo_contract_v2.pdf` to explore the example. The first similarity computation downloads MiniLM weights; explanations and Q&A require an external model API.
+Select **Use included example contracts**, leave **Generate model explanations** off, and click **Run analysis**. You can also upload your own PDFs. The first similarity computation downloads MiniLM weights. To enable explanations and Q&A, create a `.env` file containing `OPENROUTER_API_KEY=your-key` and restart the app.
+
+Diff comparisons use a unique Chroma collection per run, preventing previous documents in a reused directory from contaminating retrieval.
 
 ## Automated verification
 
@@ -66,7 +68,7 @@ Those tests download model weights and assess the embedding model itself. They a
 
 Similarity is a text-comparison signal, not a measure of legal importance. Review the source clauses before drawing conclusions.
 
-Classic mode aligns by paragraph position; insertions in the middle can shift later matches. RAG comparison searches from revised chunks to original chunks, so it does not comprehensively detect deletions. Scanned PDFs need OCR, which is not implemented. The extractor preserves all boundary lines because a first or last line is not reliably a header or footer. The default tests do not validate live model answers or persistent Chroma behavior.
+Classic mode aligns by paragraph position; insertions in the middle can shift later matches. RAG comparison searches from revised chunks to original chunks, so it does not comprehensively detect deletions. Scanned PDFs need OCR, which is not implemented. The extractor preserves all boundary lines because a first or last line is not reliably a header or footer. The default tests do not validate live model answers. With full app dependencies installed, Streamlit smoke tests also verify the no-key sample workflow and escaped text rendering.
 
 ## Contributing
 

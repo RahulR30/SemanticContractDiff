@@ -10,6 +10,8 @@ def run_pipeline(
     pdf_a_path: str,
     pdf_b_path: str,
     threshold: float = 0.95,
+    *,
+    call_llm: bool = True,
 ) -> List[dict]:
     """
     Full pipeline: two PDF paths → list of JSON analysis objects for changed clauses.
@@ -36,7 +38,7 @@ def run_pipeline(
     scores += [0.0] * (length - shared)
 
     results: List[dict] = Orchestrator(threshold=threshold).analyze(
-        paragraphs_a, paragraphs_b, scores
+        paragraphs_a, paragraphs_b, scores, call_llm=call_llm
     )
 
     return results

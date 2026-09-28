@@ -31,3 +31,13 @@ def test_empty_contracts_produce_no_analysis():
         assert run_pipeline('a.pdf', 'b.pdf') == []
     model.assert_not_called()
     llm.assert_not_called()
+
+
+def test_classic_comparison_can_skip_external_explanations():
+    with patch('main.pipeline.ExtractParagraphs') as extract, \
+         patch('main.LLM_Orchestrator.Orchestrator.call_llm') as llm:
+        extract.return_value.text_to_paragraph.side_effect = [[], ['new clause']]
+        results = run_pipeline('a.pdf', 'b.pdf', call_llm=False)
+    llm.assert_not_called()
+    assert len(results) == 1
+    assert 'disabled' in results[0]['analysis']
