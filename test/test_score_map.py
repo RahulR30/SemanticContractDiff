@@ -1,8 +1,10 @@
 """ Pooja Ramakrishnan: test_score_map.py """
 
 import unittest
+import pytest
 from main.score_map import compute_similarity
 
+@pytest.mark.integration
 class TestComputeSimilarity(unittest.TestCase):
     """Tests compute_similarity function"""
 

@@ -1,0 +1,8 @@
+# Deterministic tests: no model weights or API credentials required.
+pytest
+PyMuPDF
+numpy
+scikit-learn
+openai
+python-dotenv
+langchain-text-splitters

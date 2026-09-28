@@ -10,6 +10,7 @@ End-to-end flow for SemanticContractDiff using all four concepts:
 from __future__ import annotations
 
 import tempfile
+from uuid import uuid4
 from typing import List, Optional
 
 from main.chunking import chunk_text
@@ -47,7 +48,7 @@ def run_rag_pipeline(
     docs_b = chunk_text(text_b, version="B", source=pdf_b_path)
 
     if not docs_a or not docs_b:
-        return []
+        raise ValueError("Both PDFs must contain extractable text. Scanned PDFs need OCR.")
 
     # Persist under a temp dir when caller does not pass one — still a real
     # on-disk Chroma store for the duration of the run (interview-accurate).
@@ -60,7 +61,7 @@ def run_rag_pipeline(
     try:
         store = build_chroma_store(
             docs_a + docs_b,
-            collection_name="contract_diff",
+            collection_name=f"contract_diff_{uuid4().hex}",
             persist_directory=store_dir,
         )
 
@@ -137,7 +138,7 @@ def ask_contract_question(
     try:
         store = build_chroma_store(
             docs,
-            collection_name="contract_qa",
+            collection_name=f"contract_qa_{uuid4().hex}",
             persist_directory=store_dir,
         )
         hits = retrieve_similar(store, question, k=top_k)

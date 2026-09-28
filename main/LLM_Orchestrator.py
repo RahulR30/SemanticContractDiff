@@ -36,15 +36,15 @@ class Orchestrator:
         )
         return response.choices[0].message.content
 
-    def analyze(self, paragraphs_a: list[str], paragraphs_b: list[str], scores: list[float]) -> list[dict]:
+    def analyze(self, paragraphs_a: list[str], paragraphs_b: list[str], scores: list[float], *, call_llm: bool = True) -> list[dict]:
         if not (len(paragraphs_a) == len(paragraphs_b) == len(scores)):
             raise ValueError("paragraphs_a, paragraphs_b, and scores must all be the same length.")
 
         results = []
         for i, score in enumerate(scores):
             if score < self.threshold:
-                print(f"Clause {i} flagged (score={score:.2f}) — calling LLM...")
-                analysis = self.call_llm(paragraphs_a[i], paragraphs_b[i])
+                print(f"Clause {i} flagged (score={score:.2f}) — " + ("calling LLM..." if call_llm else "explanation disabled"))
+                analysis = self.call_llm(paragraphs_a[i], paragraphs_b[i]) if call_llm else "Model explanation disabled. Review the paired text."
                 results.append({
                     "clause_index": i,
                     "original_text": paragraphs_a[i],

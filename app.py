@@ -1,7 +1,10 @@
 """Streamlit UI for SemanticContractDiff — classic + RAG modes."""
 
 import os
+from html import escape
 import tempfile
+from pathlib import Path
+from io import BytesIO
 
 import streamlit as st
 
@@ -11,7 +14,7 @@ from main.rag_pipeline import ask_contract_question, run_rag_pipeline
 st.set_page_config(page_title="Semantic Contract Diff", layout="wide")
 st.title("Semantic Contract Diff")
 st.caption(
-    "Detects substantive legal changes between two contract versions. "
+    "Highlights text differences between two contract versions. "
     "Classic mode = index-aligned embeddings. RAG mode = chunking + Chroma + LangChain."
 )
 
@@ -32,13 +35,14 @@ with st.sidebar:
         help="Below this relevance/similarity score → flagged and sent to the LLM.",
     )
     top_k = st.slider("Retriever top-k (RAG only)", 1, 8, 3)
+    sample = st.checkbox("Use included example contracts", value=False)
+    call_llm = st.checkbox("Generate model explanations", value=bool(os.getenv("OPENROUTER_API_KEY")))
+    if call_llm and not os.getenv("OPENROUTER_API_KEY"):
+        st.warning("Set OPENROUTER_API_KEY in .env to generate explanations, or turn this off.")
     st.markdown("---")
-    st.markdown(
-        "**Buzzword map**\n"
-        "- **Chunking** → `main/chunking.py`\n"
-        "- **Vector DB** → Chroma in `main/vector_store.py`\n"
-        "- **LangChain** → splitters + prompts in `rag_chain.py`\n"
-        "- **RAG** → `main/rag_pipeline.py`"
+    st.caption(
+        "Classic mode compares paragraph positions. RAG mode finds similar passages. "
+        "Review the source text: similarity scores do not measure legal importance."
     )
 
 col_a, col_b = st.columns(2)
@@ -46,6 +50,11 @@ with col_a:
     file_a = st.file_uploader("Original contract (Version A)", type="pdf")
 with col_b:
     file_b = st.file_uploader("Revised contract (Version B)", type="pdf")
+
+if sample:
+    root = Path(__file__).resolve().parent
+    file_a = BytesIO((root / "demo_contract_v1.pdf").read_bytes())
+    file_b = BytesIO((root / "demo_contract_v2.pdf").read_bytes())
 
 tab_diff, tab_qa = st.tabs(["Diff analysis", "Ask a question (RAG)"])
 
@@ -58,9 +67,9 @@ with tab_diff:
                 chroma_dir = os.path.join(tmpdir, "chroma")
 
                 with open(path_a, "wb") as f:
-                    f.write(file_a.read())
+                    f.write(file_a.getvalue())
                 with open(path_b, "wb") as f:
-                    f.write(file_b.read())
+                    f.write(file_b.getvalue())
 
                 with st.spinner("Running pipeline..."):
                     try:
@@ -71,23 +80,24 @@ with tab_diff:
                                 threshold=threshold,
                                 top_k=top_k,
                                 persist_directory=chroma_dir,
+                                call_llm=call_llm,
                             )
                         else:
                             results = run_pipeline(
-                                path_a, path_b, threshold=threshold
+                                path_a, path_b, threshold=threshold, call_llm=call_llm
                             )
                     except Exception as e:
                         st.error(f"Pipeline failed: {e}")
                         st.stop()
 
             if not results:
-                st.success("No substantive changes detected above the threshold.")
+                st.success("No compared text fell below the similarity threshold.")
             else:
                 st.subheader(f"{len(results)} clause(s) / chunk(s) flagged as changed")
                 for item in results:
                     score = item.get("score", 0.0)
                     is_critical = score < 0.80
-                    badge = ":red[CRITICAL]" if is_critical else ":grey[MINOR]"
+                    badge = ":red[LOW SIMILARITY]" if is_critical else ":grey[CHANGED]"
                     header = (
                         f"Clause/chunk {item['clause_index']} — "
                         f"similarity {score:.2f}  {badge}"
@@ -99,14 +109,14 @@ with tab_diff:
                             st.markdown("**Version A (original / nearest match)**")
                             st.markdown(
                                 f"<div style='background:{highlight_color};padding:10px;"
-                                f"border-radius:6px'>{item.get('original_text', '')}</div>",
+                                f"border-radius:6px'>{escape(item.get('original_text', ''))}</div>",
                                 unsafe_allow_html=True,
                             )
                         with right:
                             st.markdown("**Version B (revised)**")
                             st.markdown(
                                 f"<div style='background:{highlight_color};padding:10px;"
-                                f"border-radius:6px'>{item.get('revised_text', '')}</div>",
+                                f"border-radius:6px'>{escape(item.get('revised_text', ''))}</div>",
                                 unsafe_allow_html=True,
                             )
                         st.markdown("**LLM analysis**")
@@ -127,7 +137,9 @@ with tab_qa:
         "Question",
         placeholder="e.g. Did the indemnity or payment terms get worse for us?",
     )
-    if file_a and file_b and question:
+    if not os.getenv("OPENROUTER_API_KEY"):
+        st.info("Q&A needs an OPENROUTER_API_KEY in .env. Diff analysis works without a key.")
+    if file_a and file_b and question and os.getenv("OPENROUTER_API_KEY"):
         if st.button("Ask", type="primary"):
             with tempfile.TemporaryDirectory() as tmpdir:
                 path_a = os.path.join(tmpdir, "version_a.pdf")
